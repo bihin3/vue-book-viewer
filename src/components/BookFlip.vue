@@ -298,21 +298,21 @@ watchEffect(() => {
 });
 
 const bookStyle = computed(() => ({
-  width: `${config.value.width}px`,
-  height: `${config.value.height}px`,
+  width: '100%',
+  aspectRatio: `${config.value.width} / ${config.value.height}`,
   perspective: `${config.value.perspective}px`,
 }));
 
 const leftPageStyle = computed(() => ({
-  width: `${config.value.width / 2}px`,
-  height: `${config.value.height}px`,
-  left: isRTL.value ? `${config.value.width / 2}px` : '0px',
+  width: '50%',
+  height: '100%',
+  left: isRTL.value ? '50%' : '0',
 }));
 
 const getRightPageStyle = (index: number) => ({
-  width: `${config.value.width / 2}px`,
-  height: `${config.value.height}px`,
-  left: isRTL.value ? '0px' : `${config.value.width / 2}px`,
+  width: '50%',
+  height: '100%',
+  left: isRTL.value ? '0' : '50%',
   zIndex: props.pages.length - index,
   transition: `transform ${config.value.duration}ms ${config.value.easing}`,
 });
@@ -429,6 +429,8 @@ defineExpose({
   position: relative;
   transform-style: preserve-3d;
   background: #e0e0e0;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .page-left {
