@@ -35,7 +35,7 @@
         class="page-right"
         :class="{
           flipped: index < currentPage,
-          flipping: isFlipping && (index === currentPage || index === currentPage - 1),
+          flipping: flippingPageIndex === index,
           active: index === currentPage,
           'last-page': index === currentPage && !canGoNext
         }"
@@ -108,6 +108,7 @@ const displayedLeftPage = ref(0); // Delayed left page update
 const {
   currentPage,
   isFlipping,
+  flippingPageIndex,
   canGoNext,
   canGoPrev,
   progress,

@@ -10,6 +10,7 @@ export function useBookFlip(
   const isDragging = ref(false);
   const dragStartX = ref(0);
   const dragProgress = ref(0);
+  const flippingPageIndex = ref<number | null>(null);
 
   const defaultOptions: Required<BookFlipOptions> = {
     width: 800,
@@ -49,9 +50,11 @@ export function useBookFlip(
   const nextPage = () => {
     if (canGoNext.value && !isFlipping.value) {
       isFlipping.value = true;
+      flippingPageIndex.value = currentPage.value;
       currentPage.value++;
       setTimeout(() => {
         isFlipping.value = false;
+        flippingPageIndex.value = null;
       }, config.value.duration);
     }
   };
@@ -60,8 +63,10 @@ export function useBookFlip(
     if (canGoPrev.value && !isFlipping.value) {
       isFlipping.value = true;
       currentPage.value--;
+      flippingPageIndex.value = currentPage.value;
       setTimeout(() => {
         isFlipping.value = false;
+        flippingPageIndex.value = null;
       }, config.value.duration);
     }
   };
@@ -69,9 +74,13 @@ export function useBookFlip(
   const goToPage = (page: number) => {
     if (page >= 0 && page <= pages.length && !isFlipping.value) {
       isFlipping.value = true;
+      const oldPage = currentPage.value;
       currentPage.value = page;
+      // Set flipping page index based on direction
+      flippingPageIndex.value = page > oldPage ? oldPage : page;
       setTimeout(() => {
         isFlipping.value = false;
+        flippingPageIndex.value = null;
       }, config.value.duration);
     }
   };
@@ -136,6 +145,7 @@ export function useBookFlip(
     isFlipping,
     isDragging,
     dragProgress,
+    flippingPageIndex,
     canGoNext,
     canGoPrev,
     progress,
