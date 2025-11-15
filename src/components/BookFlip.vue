@@ -13,7 +13,12 @@
       @touchend="handleDragEnd"
     >
       <!-- Left page (static background) -->
-      <div class="page-left" :style="leftPageStyle">
+      <div
+        class="page-left"
+        :class="{ clickable: canGoPrev, 'first-page': displayedLeftPage === 0 }"
+        :style="leftPageStyle"
+        @click="handleLeftPageClick"
+      >
         <div class="left-page-wrapper">
           <img v-if="leftPageImage" :src="leftPageImage" alt="" draggable="false" class="left-page-img">
         </div>
@@ -27,7 +32,8 @@
         :class="{
           flipped: index < currentPage,
           flipping: isFlipping && (index === currentPage || index === currentPage - 1),
-          active: index === currentPage
+          active: index === currentPage,
+          'last-page': index === currentPage && !canGoNext
         }"
         :style="getRightPageStyle(index)"
         @click="handlePageClick(index)"
@@ -180,6 +186,12 @@ const prevPage = () => {
   }, config.duration);
 };
 
+const handleLeftPageClick = () => {
+  if (canGoPrev.value && !isFlipping.value) {
+    prevPage();
+  }
+};
+
 const handlePageClick = (index: number) => {
   if (index === currentPage.value - 1 && canGoPrev.value) {
     prevPage();
@@ -230,6 +242,10 @@ defineExpose({
   z-index: 1;
 }
 
+.page-left.clickable {
+  cursor: pointer;
+}
+
 .left-page-wrapper {
   position: relative;
   width: 100%;
@@ -262,6 +278,10 @@ defineExpose({
   );
   pointer-events: none;
   z-index: 2;
+}
+
+.page-left.first-page::after {
+  opacity: 0;
 }
 
 
@@ -306,6 +326,10 @@ defineExpose({
   opacity: 1;
   pointer-events: none;
   z-index: 5;
+}
+
+.page-right.last-page::after {
+  opacity: 0;
 }
 
 .page-right:hover:not(.flipped) {
