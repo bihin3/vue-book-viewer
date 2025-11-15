@@ -13,6 +13,7 @@ export interface BookFlipOptions {
   thickness?: number;
   autoPlay?: boolean;
   autoPlayInterval?: number;
+  rtl?: boolean; // Right-to-left mode for Japanese manga and books
 }
 
 export interface BookFlipEmits {

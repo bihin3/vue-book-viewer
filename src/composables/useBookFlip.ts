@@ -21,9 +21,10 @@ export function useBookFlip(
     thickness: 2,
     autoPlay: false,
     autoPlayInterval: 3000,
+    rtl: false,
   };
 
-  const config = { ...defaultOptions, ...options };
+  const config = computed(() => ({ ...defaultOptions, ...options }));
 
   const canGoNext = computed(() => currentPage.value < pages.length);
   const canGoPrev = computed(() => currentPage.value > 0);
@@ -39,7 +40,7 @@ export function useBookFlip(
       currentPage.value++;
       setTimeout(() => {
         isFlipping.value = false;
-      }, config.duration);
+      }, config.value.duration);
     }
   };
 
@@ -49,7 +50,7 @@ export function useBookFlip(
       currentPage.value--;
       setTimeout(() => {
         isFlipping.value = false;
-      }, config.duration);
+      }, config.value.duration);
     }
   };
 
@@ -59,7 +60,7 @@ export function useBookFlip(
       currentPage.value = page;
       setTimeout(() => {
         isFlipping.value = false;
-      }, config.duration);
+      }, config.value.duration);
     }
   };
 
@@ -73,7 +74,7 @@ export function useBookFlip(
     if (!isDragging.value) return;
     const currentX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const diff = currentX - dragStartX.value;
-    const pageWidth = config.width / 2;
+    const pageWidth = config.value.width / 2;
     dragProgress.value = Math.max(-1, Math.min(1, diff / pageWidth));
   };
 
@@ -91,14 +92,14 @@ export function useBookFlip(
   };
 
   const startAutoPlay = () => {
-    if (!config.autoPlay) return;
+    if (!config.value.autoPlay) return;
     autoPlayTimer = window.setInterval(() => {
       if (canGoNext.value) {
         nextPage();
       } else {
         goToPage(0);
       }
-    }, config.autoPlayInterval);
+    }, config.value.autoPlayInterval);
   };
 
   const stopAutoPlay = () => {
@@ -109,7 +110,7 @@ export function useBookFlip(
   };
 
   onMounted(() => {
-    if (config.autoPlay) {
+    if (config.value.autoPlay) {
       startAutoPlay();
     }
   });

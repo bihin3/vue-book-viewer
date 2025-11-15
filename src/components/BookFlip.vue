@@ -2,6 +2,7 @@
   <div class="book-flip-container">
     <div
       class="book-flip"
+      :class="{ rtl: isRTL }"
       ref="bookRef"
       :style="bookStyle"
       @mousedown="handleDragStart"
@@ -116,6 +117,7 @@ const {
 } = useBookFlip(props.pages, props.options);
 
 const totalPages = computed(() => props.pages.length * 2);
+const isRTL = computed(() => config.value.rtl);
 
 const leftPageImage = computed(() => {
   if (displayedLeftPage.value === 0) {
@@ -138,7 +140,7 @@ watch(currentPage, (newPage, oldPage) => {
     // This ensures smooth transition without white flash
     setTimeout(() => {
       displayedLeftPage.value = newPage;
-    }, config.duration * 0.9); // Update at 90% of animation duration
+    }, config.value.duration * 0.9); // Update at 90% of animation duration
   } else if (newPage < oldPage) {
     // Flipping backward - update left page immediately
     displayedLeftPage.value = newPage;
@@ -149,23 +151,23 @@ watch(currentPage, (newPage, oldPage) => {
 }, { immediate: true });
 
 const bookStyle = computed(() => ({
-  width: `${config.width}px`,
-  height: `${config.height}px`,
-  perspective: `${config.perspective}px`,
+  width: `${config.value.width}px`,
+  height: `${config.value.height}px`,
+  perspective: `${config.value.perspective}px`,
 }));
 
 const leftPageStyle = computed(() => ({
-  width: `${config.width / 2}px`,
-  height: `${config.height}px`,
-  left: '0px',
+  width: `${config.value.width / 2}px`,
+  height: `${config.value.height}px`,
+  left: isRTL.value ? `${config.value.width / 2}px` : '0px',
 }));
 
 const getRightPageStyle = (index: number) => ({
-  width: `${config.width / 2}px`,
-  height: `${config.height}px`,
-  left: `${config.width / 2}px`,
+  width: `${config.value.width / 2}px`,
+  height: `${config.value.height}px`,
+  left: isRTL.value ? '0px' : `${config.value.width / 2}px`,
   zIndex: props.pages.length - index,
-  transition: `transform ${config.duration}ms ${config.easing}`,
+  transition: `transform ${config.value.duration}ms ${config.value.easing}`,
 });
 
 const nextPage = () => {
@@ -174,7 +176,7 @@ const nextPage = () => {
   setTimeout(() => {
     emit('page-change', currentPage.value);
     emit('flip-end', currentPage.value);
-  }, config.duration);
+  }, config.value.duration);
 };
 
 const prevPage = () => {
@@ -183,7 +185,7 @@ const prevPage = () => {
   setTimeout(() => {
     emit('page-change', currentPage.value);
     emit('flip-end', currentPage.value);
-  }, config.duration);
+  }, config.value.duration);
 };
 
 const handleLeftPageClick = () => {
@@ -280,6 +282,17 @@ defineExpose({
   z-index: 2;
 }
 
+.book-flip.rtl .page-left::after {
+  left: 0;
+  right: auto;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.05) 5%,
+    transparent 15%
+  );
+}
+
 .page-left.first-page::after {
   opacity: 0;
 }
@@ -291,6 +304,10 @@ defineExpose({
   transform-style: preserve-3d;
   cursor: pointer;
   transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+.book-flip.rtl .page-right {
+  transform-origin: right center;
 }
 
 .page-right.active {
@@ -308,6 +325,13 @@ defineExpose({
   transform-origin: left center;
   transform: rotateY(90deg);
   z-index: 10;
+}
+
+.book-flip.rtl .page-right::before {
+  left: auto;
+  right: -2px;
+  background: linear-gradient(to left, #aaa, #fff);
+  transform-origin: right center;
 }
 
 .page-right::after {
@@ -328,6 +352,17 @@ defineExpose({
   z-index: 5;
 }
 
+.book-flip.rtl .page-right::after {
+  left: auto;
+  right: 0;
+  background: linear-gradient(
+    to left,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.05) 5%,
+    transparent 15%
+  );
+}
+
 .page-right.last-page::after {
   opacity: 0;
 }
@@ -341,6 +376,10 @@ defineExpose({
   pointer-events: none;
   /* Hide flipped pages behind the left page */
   z-index: 0 !important;
+}
+
+.book-flip.rtl .page-right.flipped {
+  transform: rotateY(180deg);
 }
 
 .page-right.flipped:not(.flipping) {

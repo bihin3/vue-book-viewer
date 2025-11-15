@@ -2,12 +2,23 @@
   <div class="demo-container">
     <header>
       <h1>Vue Book Viewer Demo</h1>
-      <p>物理的な本のようなページめくりアニメーションを実装するVue 3コンポーネント</p>
     </header>
 
     <main>
+      <section class="settings-section">
+        <div class="settings-panel">
+          <button @click="toggleRTL" class="setting-btn" :class="{ active: options.rtl }">
+            {{ options.rtl ? '右綴じモード' : '左綴じモード' }}
+          </button>
+          <button @click="jumpToFirstPage" class="setting-btn">最初のページ</button>
+          <button @click="jumpToLastPage" class="setting-btn">最後のページ</button>
+          <button @click="toggleAutoPlay" class="setting-btn" :class="{ active: isAutoPlaying }">
+            {{ isAutoPlaying ? '自動再生停止' : '自動再生開始' }}
+          </button>
+        </div>
+      </section>
+
       <section class="demo-section">
-        <h2>基本的な使い方</h2>
         <BookFlip
           ref="bookRef"
           :pages="pages"
@@ -25,59 +36,6 @@
         <div class="event-log">
           <div v-for="(event, index) in events" :key="index" class="event-item">
             {{ event }}
-          </div>
-        </div>
-      </section>
-
-      <section class="demo-section">
-        <h2>コントロール</h2>
-        <div class="controls-panel">
-          <button @click="jumpToFirstPage" class="btn">最初のページ</button>
-          <button @click="jumpToLastPage" class="btn">最後のページ</button>
-          <button @click="toggleAutoPlay" class="btn">
-            {{ isAutoPlaying ? '自動再生停止' : '自動再生開始' }}
-          </button>
-        </div>
-      </section>
-
-      <section class="demo-section">
-        <h2>オプション設定</h2>
-        <div class="options-panel">
-          <div class="option-group">
-            <label>
-              幅: {{ options.width }}px
-              <input
-                type="range"
-                v-model.number="options.width"
-                min="600"
-                max="1200"
-                step="100"
-              />
-            </label>
-          </div>
-          <div class="option-group">
-            <label>
-              高さ: {{ options.height }}px
-              <input
-                type="range"
-                v-model.number="options.height"
-                min="400"
-                max="900"
-                step="100"
-              />
-            </label>
-          </div>
-          <div class="option-group">
-            <label>
-              アニメーション時間: {{ options.duration }}ms
-              <input
-                type="range"
-                v-model.number="options.duration"
-                min="300"
-                max="2000"
-                step="100"
-              />
-            </label>
           </div>
         </div>
       </section>
@@ -123,6 +81,7 @@ const options = reactive<BookFlipOptions>({
   perspective: 2000,
   autoPlay: false,
   autoPlayInterval: 3000,
+  rtl: false,
 });
 
 const addEvent = (message: string) => {
@@ -160,6 +119,11 @@ const toggleAutoPlay = () => {
   options.autoPlay = isAutoPlaying.value;
   addEvent(isAutoPlaying.value ? '自動再生を開始しました' : '自動再生を停止しました');
 };
+
+const toggleRTL = () => {
+  options.rtl = !options.rtl;
+  addEvent(options.rtl ? '右綴じモードに切り替えました' : '左綴じモードに切り替えました');
+};
 </script>
 
 <style scoped>
@@ -172,7 +136,7 @@ const toggleAutoPlay = () => {
 
 header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 h1 {
@@ -184,6 +148,46 @@ h1 {
 header p {
   color: #7f8c8d;
   font-size: 1.1rem;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+}
+
+.settings-panel {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.setting-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  background: white;
+  color: #495057;
+  border: 2px solid #dee2e6;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.setting-btn:hover {
+  border-color: #4ECDC4;
+  color: #4ECDC4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(78, 205, 196, 0.2);
+}
+
+.setting-btn.active {
+  background: #4ECDC4;
+  color: white;
+  border-color: #4ECDC4;
 }
 
 .demo-section {
@@ -218,54 +222,6 @@ header p {
 
 .event-item:last-child {
   border-bottom: none;
-}
-
-.controls-panel {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  background: #4ECDC4;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn:hover {
-  background: #45B7D1;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.options-panel {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.option-group {
-  background: white;
-  padding: 1rem;
-  border-radius: 4px;
-  border: 1px solid #dee2e6;
-}
-
-.option-group label {
-  display: block;
-  color: #495057;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-
-.option-group input[type="range"] {
-  width: 100%;
-  margin-top: 0.5rem;
 }
 
 footer {
