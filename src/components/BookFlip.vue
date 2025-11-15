@@ -435,8 +435,6 @@ defineExpose({
 .page-right.flipped {
   transform: rotateY(-180deg);
   pointer-events: none;
-  /* Hide flipped pages behind the left page */
-  z-index: 0 !important;
 }
 
 .book-flip.rtl .page-right.flipped {
@@ -446,6 +444,7 @@ defineExpose({
 .page-right.flipped:not(.flipping) {
   /* Hide only after animation completes */
   visibility: hidden;
+  z-index: 0 !important;
 }
 
 .page-content {
