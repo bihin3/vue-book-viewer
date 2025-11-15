@@ -13,8 +13,6 @@
           <button @click="toggleSingleFirstPage" class="setting-btn" :class="{ active: !options.singleFirstPage }">
             {{ options.singleFirstPage ? '1ページ目: 単一ページ' : '1ページ目: 両開き' }}
           </button>
-          <button @click="jumpToFirstPage" class="setting-btn">最初のページ</button>
-          <button @click="jumpToLastPage" class="setting-btn">最後のページ</button>
           <button @click="toggleAutoPlay" class="setting-btn" :class="{ active: isAutoPlaying }">
             {{ isAutoPlaying ? '自動再生停止' : '自動再生開始' }}
           </button>
@@ -106,16 +104,6 @@ const handleFlipStart = (page: number) => {
 
 const handleFlipEnd = (page: number) => {
   addEvent(`ページめくり完了: ${page + 1}ページ`);
-};
-
-const jumpToFirstPage = () => {
-  bookRef.value?.goToPage(0);
-  addEvent('最初のページへジャンプ');
-};
-
-const jumpToLastPage = () => {
-  bookRef.value?.goToPage(pages.length);
-  addEvent('最後のページへジャンプ');
 };
 
 const toggleAutoPlay = () => {

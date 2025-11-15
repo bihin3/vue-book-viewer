@@ -56,27 +56,50 @@
     </div>
 
     <div v-if="showControls" class="controls">
-      <slot name="controls" :next="nextPage" :prev="prevPage" :current="currentPage" :total="pages.length">
-        <button
-          @click="prevPage"
-          :disabled="!canGoPrev"
-          class="control-btn"
-        >
-          ←
-        </button>
-        <span class="page-indicator">{{ currentPageRange }} / {{ totalPages }}</span>
-        <button
-          @click="nextPage"
-          :disabled="!canGoNext"
-          class="control-btn"
-        >
-          →
-        </button>
+      <slot name="controls" :next="nextPage" :prev="prevPage" :current="currentPage" :total="pages.length" :goToFirst="goToFirstPage" :goToLast="goToLastPage">
+        <div class="toolbar">
+          <div class="toolbar-buttons">
+            <button
+              @click="goToFirstPage"
+              :disabled="currentPage === 0"
+              class="control-btn"
+              title="最初のページ"
+            >
+              ⏮
+            </button>
+            <button
+              @click="prevPage"
+              :disabled="!canGoPrev"
+              class="control-btn"
+              title="前のページ"
+            >
+              ◀
+            </button>
+            <button
+              @click="nextPage"
+              :disabled="!canGoNext"
+              class="control-btn"
+              title="次のページ"
+            >
+              ▶
+            </button>
+            <button
+              @click="goToLastPage"
+              :disabled="currentPage === pages.length"
+              class="control-btn"
+              title="最後のページ"
+            >
+              ⏭
+            </button>
+          </div>
+          <div v-if="showProgress" class="progress-bar">
+            <div class="progress-fill" :style="{ width: `${progressPercent}%` }"></div>
+          </div>
+          <div class="page-info">
+            <span class="page-indicator">{{ currentMaxPage }}/{{ totalPages }}ページ・{{ progressPercent }}%</span>
+          </div>
+        </div>
       </slot>
-    </div>
-
-    <div v-if="showProgress" class="progress-bar">
-      <div class="progress-fill" :style="{ width: `${progress}%` }"></div>
     </div>
   </div>
 </template>
@@ -143,6 +166,26 @@ const currentPageRange = computed(() => {
     const rightPage = Math.min(currentPage.value * 2 + 1, totalPages.value);
     return `${leftPage}-${rightPage}`;
   }
+});
+
+// Current maximum page number being displayed
+const currentMaxPage = computed(() => {
+  if (!config.value.singleFirstPage) {
+    // Spread mode
+    return Math.min(currentPage.value * 2 + 2, totalPages.value);
+  } else {
+    // Single page mode
+    if (currentPage.value === 0) {
+      return 1;
+    }
+    return Math.min(currentPage.value * 2 + 1, totalPages.value);
+  }
+});
+
+// Progress percentage based on page numbers
+const progressPercent = computed(() => {
+  if (totalPages.value === 0) return 0;
+  return Math.round((currentMaxPage.value / totalPages.value) * 100);
 });
 
 const leftPageImage = computed(() => {
@@ -292,6 +335,28 @@ const prevPage = () => {
   }, config.value.duration);
 };
 
+const goToFirstPage = () => {
+  if (currentPage.value !== 0 && !isFlipping.value) {
+    emit('flip-start', 0);
+    goToPage(0);
+    setTimeout(() => {
+      emit('page-change', currentPage.value);
+      emit('flip-end', currentPage.value);
+    }, config.value.duration);
+  }
+};
+
+const goToLastPage = () => {
+  if (currentPage.value !== props.pages.length && !isFlipping.value) {
+    emit('flip-start', props.pages.length);
+    goToPage(props.pages.length);
+    setTimeout(() => {
+      emit('page-change', currentPage.value);
+      emit('flip-end', currentPage.value);
+    }, config.value.duration);
+  }
+};
+
 const handleLeftPageClick = () => {
   if (canGoPrev.value && !isFlipping.value) {
     prevPage();
@@ -345,6 +410,8 @@ defineExpose({
   nextPage,
   prevPage,
   goToPage,
+  goToFirstPage,
+  goToLastPage,
 });
 </script>
 
@@ -353,8 +420,9 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
+  gap: 1rem;
   user-select: none;
+  width: 100%;
 }
 
 .book-flip {
@@ -535,23 +603,53 @@ defineExpose({
 
 .controls {
   display: flex;
-  gap: 1rem;
+  justify-content: center;
   align-items: center;
+  width: 100%;
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  background: #f8f8f8;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  width: 100%;
+}
+
+.toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .control-btn {
-  padding: 0.5rem 1rem;
-  font-size: 1.2rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 1rem;
   cursor: pointer;
-  border: 1px solid #ccc;
-  background: white;
-  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #555;
   transition: all 0.2s;
+  border-radius: 4px;
+  min-width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .control-btn:hover:not(:disabled) {
-  background: #f0f0f0;
-  transform: scale(1.05);
+  background: rgba(0, 0, 0, 0.08);
+  color: #333;
+}
+
+.control-btn:active:not(:disabled) {
+  background: rgba(0, 0, 0, 0.15);
+  transform: scale(0.95);
 }
 
 .control-btn:disabled {
@@ -559,25 +657,46 @@ defineExpose({
   cursor: not-allowed;
 }
 
-.page-indicator {
-  font-size: 1rem;
-  color: #666;
-  min-width: 100px;
-  text-align: center;
-}
-
 .progress-bar {
-  width: 100%;
-  max-width: 400px;
-  height: 4px;
-  background: #e0e0e0;
-  border-radius: 2px;
-  overflow: hidden;
+  position: relative;
+  flex-grow: 1;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: visible;
 }
 
 .progress-fill {
   height: 100%;
   background: #4CAF50;
   transition: width 0.3s ease;
+  border-radius: 4px;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  background: #4CAF50;
+  border: 2px solid white;
+  border-radius: 50%;
+  transition: right 0.3s ease;
+}
+
+.page-info {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.page-indicator {
+  font-size: 0.85rem;
+  color: #333;
+  font-weight: 600;
+  user-select: none;
 }
 </style>
