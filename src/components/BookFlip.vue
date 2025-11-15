@@ -30,7 +30,7 @@
 
       <!-- Flipping pages (right side) -->
       <div
-        v-for="(page, index) in pages"
+        v-for="(_page, index) in pages"
         :key="index"
         class="page-right"
         :class="{
@@ -82,8 +82,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, watchEffect } from 'vue';
 import { useBookFlip } from '../composables/useBookFlip';
+import { useImagePreload } from '../composables/useImagePreload';
 import type { BookPage, BookFlipOptions, BookFlipEmits } from '../types';
 
 interface Props {
@@ -118,6 +119,9 @@ const {
   handleDragMove: onDragMove,
   handleDragEnd: onDragEnd,
 } = useBookFlip(props.pages, props.options);
+
+// Image preloading
+const { preloadImages } = useImagePreload();
 
 const totalPages = computed(() => props.pages.length * 2);
 const isRTL = computed(() => config.value.rtl);
@@ -169,6 +173,12 @@ const leftPageImage = computed(() => {
 // Keep the old left page visible during flip animation,
 // then update it slightly before animation completes to avoid white flash
 watch(currentPage, (newPage, oldPage) => {
+  // Handle initial load
+  if (oldPage === undefined) {
+    displayedLeftPage.value = newPage;
+    return;
+  }
+
   if (newPage > oldPage) {
     // Flipping forward - update left page just before animation completes
     // This ensures smooth transition without white flash
@@ -179,10 +189,69 @@ watch(currentPage, (newPage, oldPage) => {
     // Flipping backward - update left page immediately
     displayedLeftPage.value = newPage;
   } else {
-    // Initial load
+    // No change
     displayedLeftPage.value = newPage;
   }
 }, { immediate: true });
+
+// Preload images for current, next, and previous pages
+watchEffect(() => {
+  const imagesToPreload: string[] = [];
+
+  // Helper to safely add image URLs
+  const addImage = (url: string | null) => {
+    if (url) imagesToPreload.push(url);
+  };
+
+  // Current page images
+  const currentPageIndex = currentPage.value;
+
+  if (!config.value.singleFirstPage) {
+    // Spread mode
+    // Left page
+    if (currentPageIndex === 0) {
+      addImage(props.pages[0]?.front);
+    } else {
+      addImage(props.pages[currentPageIndex]?.front);
+    }
+    // Right page (front and back)
+    addImage(props.pages[currentPageIndex]?.back);
+
+    // Next page
+    if (currentPageIndex + 1 < props.pages.length) {
+      addImage(props.pages[currentPageIndex + 1]?.front);
+      addImage(props.pages[currentPageIndex + 1]?.back);
+    }
+  } else {
+    // Single first page mode
+    // Current left page
+    if (currentPageIndex > 0) {
+      const flippedPageIndex = currentPageIndex - 1;
+      addImage(props.pages[flippedPageIndex]?.back);
+    }
+
+    // Current right page
+    addImage(props.pages[currentPageIndex]?.front);
+    addImage(props.pages[currentPageIndex]?.back);
+
+    // Next page
+    if (currentPageIndex + 1 < props.pages.length) {
+      addImage(props.pages[currentPageIndex + 1]?.front);
+      addImage(props.pages[currentPageIndex + 1]?.back);
+    }
+  }
+
+  // Previous page (for backward navigation)
+  if (currentPageIndex > 0) {
+    addImage(props.pages[currentPageIndex - 1]?.front);
+    addImage(props.pages[currentPageIndex - 1]?.back);
+  }
+
+  // Preload all collected images
+  if (imagesToPreload.length > 0) {
+    preloadImages(imagesToPreload);
+  }
+});
 
 const bookStyle = computed(() => ({
   width: `${config.value.width}px`,
