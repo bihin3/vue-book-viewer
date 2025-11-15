@@ -16,7 +16,10 @@
       <!-- Left page (static background) -->
       <div
         class="page-left"
-        :class="{ clickable: canGoPrev, 'first-page': displayedLeftPage === 0 }"
+        :class="{
+          clickable: canGoPrev,
+          'first-page': displayedLeftPage === 0 && config.singleFirstPage
+        }"
         :style="leftPageStyle"
         @click="handleLeftPageClick"
       >
@@ -40,13 +43,13 @@
         @click="handlePageClick(index)"
       >
         <div class="page-content front">
-          <slot name="page" :page="page.front" :index="index * 2 + 1">
-            <img :src="page.front" alt="" draggable="false">
+          <slot name="page" :page="getRightPageFront(index)" :index="index * 2 + 1">
+            <img :src="getRightPageFront(index)" alt="" draggable="false">
           </slot>
         </div>
         <div class="page-content back">
-          <slot name="page" :page="page.back" :index="index * 2 + 2">
-            <img :src="page.back" alt="" draggable="false">
+          <slot name="page" :page="getRightPageBack(index)" :index="index * 2 + 2">
+            <img :src="getRightPageBack(index)" alt="" draggable="false">
           </slot>
         </div>
       </div>
@@ -61,7 +64,7 @@
         >
           ←
         </button>
-        <span class="page-indicator">{{ currentPage * 2 + 1 }}-{{ Math.min(currentPage * 2 + 2, totalPages) }} / {{ totalPages }}</span>
+        <span class="page-indicator">{{ currentPageRange }} / {{ totalPages }}</span>
         <button
           @click="nextPage"
           :disabled="!canGoNext"
@@ -119,14 +122,45 @@ const {
 const totalPages = computed(() => props.pages.length * 2);
 const isRTL = computed(() => config.value.rtl);
 
+// Current page range for display
+const currentPageRange = computed(() => {
+  if (!config.value.singleFirstPage) {
+    // Spread mode: show spread page numbers
+    const leftPage = currentPage.value * 2 + 1;
+    const rightPage = currentPage.value * 2 + 2;
+    return `${leftPage}-${rightPage}`;
+  } else {
+    // Single page mode: first page is single, then spreads
+    if (currentPage.value === 0) {
+      return '1';
+    }
+    const leftPage = currentPage.value * 2;
+    const rightPage = Math.min(currentPage.value * 2 + 1, totalPages.value);
+    return `${leftPage}-${rightPage}`;
+  }
+});
+
 const leftPageImage = computed(() => {
   if (displayedLeftPage.value === 0) {
-    return null; // First page, no left page
+    // First page behavior depends on singleFirstPage option
+    if (config.value.singleFirstPage) {
+      return null; // Single page mode: no left page
+    } else {
+      // Spread mode: left page shows page 1
+      return props.pages[0]?.front || null;
+    }
   }
-  // Left page shows the back of the currently active (not yet flipped) page
+
+  if (!config.value.singleFirstPage) {
+    // Spread mode: each page pair is a spread
+    // currentPage=1 -> pages[1].front (page 3)
+    // currentPage=2 -> pages[2].front (page 5)
+    return props.pages[displayedLeftPage.value]?.front || null;
+  }
+
+  // Single page mode: left page shows the back of the previously flipped page
   // When currentPage=1: we just flipped pages[0], so show pages[0].back (Page 2)
   // When currentPage=2: we just flipped pages[1], so show pages[1].back (Page 4)
-  // When currentPage=3: we just flipped pages[2], so show pages[2].back (Page 6)
   const flippedPageIndex = displayedLeftPage.value - 1;
   return props.pages[flippedPageIndex]?.back || null;
 });
@@ -136,11 +170,16 @@ const leftPageImage = computed(() => {
 // then update it slightly before animation completes to avoid white flash
 watch(currentPage, (newPage, oldPage) => {
   if (newPage > oldPage) {
-    // Flipping forward - update left page just before animation completes
-    // This ensures smooth transition without white flash
-    setTimeout(() => {
+    if (!config.value.singleFirstPage) {
+      // Spread mode: update immediately
+      // The back face shows the next spread's left page, so no white flash
       displayedLeftPage.value = newPage;
-    }, config.value.duration * 0.9); // Update at 90% of animation duration
+    } else {
+      // Single page mode: delayed update to avoid white flash
+      setTimeout(() => {
+        displayedLeftPage.value = newPage;
+      }, config.value.duration * 0.9);
+    }
   } else if (newPage < oldPage) {
     // Flipping backward - update left page immediately
     displayedLeftPage.value = newPage;
@@ -212,6 +251,28 @@ const handleDragMove = (e: MouseEvent | TouchEvent) => {
 
 const handleDragEnd = () => {
   onDragEnd();
+};
+
+// Get the image for the right page front
+// In spread mode, show the back (right page of the spread)
+const getRightPageFront = (index: number) => {
+  if (!config.value.singleFirstPage) {
+    // Spread mode: right page shows the back of the current page pair
+    // pages[0].back = page 2, pages[1].back = page 4, etc.
+    return props.pages[index]?.back || '';
+  }
+  return props.pages[index]?.front || '';
+};
+
+// Get the image for the right page back (shown during flip animation)
+// In spread mode, show the next spread's left page
+const getRightPageBack = (index: number) => {
+  if (!config.value.singleFirstPage) {
+    // Spread mode: when flipping, show the next spread's left page
+    // This creates a smooth transition to the next spread
+    return props.pages[index + 1]?.front || '';
+  }
+  return props.pages[index]?.back || '';
 };
 
 defineExpose({

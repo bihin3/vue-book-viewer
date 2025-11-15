@@ -22,12 +22,24 @@ export function useBookFlip(
     autoPlay: false,
     autoPlayInterval: 3000,
     rtl: false,
+    singleFirstPage: true,
   };
 
   const config = computed(() => ({ ...defaultOptions, ...options }));
 
-  const canGoNext = computed(() => currentPage.value < pages.length);
+  const canGoNext = computed(() => {
+    if (!config.value.singleFirstPage) {
+      // Spread mode: can only go to next page pair if it exists
+      // pages[0], pages[1], pages[2] -> currentPage can be 0, 1, 2
+      // If currentPage = 2 (last pair), can't go to 3
+      return currentPage.value + 1 < pages.length;
+    }
+    // Single page mode: can go up to pages.length (showing only left page at the end)
+    return currentPage.value < pages.length;
+  });
+
   const canGoPrev = computed(() => currentPage.value > 0);
+
   const progress = computed(() =>
     pages.length > 0 ? (currentPage.value / pages.length) * 100 : 0
   );

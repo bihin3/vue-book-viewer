@@ -10,6 +10,9 @@
           <button @click="toggleRTL" class="setting-btn" :class="{ active: options.rtl }">
             {{ options.rtl ? '右綴じモード' : '左綴じモード' }}
           </button>
+          <button @click="toggleSingleFirstPage" class="setting-btn" :class="{ active: !options.singleFirstPage }">
+            {{ options.singleFirstPage ? '1ページ目: 単一ページ' : '1ページ目: 両開き' }}
+          </button>
           <button @click="jumpToFirstPage" class="setting-btn">最初のページ</button>
           <button @click="jumpToLastPage" class="setting-btn">最後のページ</button>
           <button @click="toggleAutoPlay" class="setting-btn" :class="{ active: isAutoPlaying }">
@@ -82,6 +85,7 @@ const options = reactive<BookFlipOptions>({
   autoPlay: false,
   autoPlayInterval: 3000,
   rtl: false,
+  singleFirstPage: true,
 });
 
 const addEvent = (message: string) => {
@@ -123,6 +127,11 @@ const toggleAutoPlay = () => {
 const toggleRTL = () => {
   options.rtl = !options.rtl;
   addEvent(options.rtl ? '右綴じモードに切り替えました' : '左綴じモードに切り替えました');
+};
+
+const toggleSingleFirstPage = () => {
+  options.singleFirstPage = !options.singleFirstPage;
+  addEvent(options.singleFirstPage ? '1ページ目を単一ページ表示に切り替えました' : '1ページ目を両開き表示に切り替えました');
 };
 </script>
 

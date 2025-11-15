@@ -14,6 +14,7 @@ export interface BookFlipOptions {
   autoPlay?: boolean;
   autoPlayInterval?: number;
   rtl?: boolean; // Right-to-left mode for Japanese manga and books
+  singleFirstPage?: boolean; // If true, first page shows only on the right side. If false, shows as spread (default: true)
 }
 
 export interface BookFlipEmits {
