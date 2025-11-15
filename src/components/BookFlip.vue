@@ -221,13 +221,11 @@ defineExpose({
   position: relative;
   transform-style: preserve-3d;
   background: #e0e0e0;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 .page-left {
   position: absolute;
   background: white;
-  box-shadow: inset -3px 0 10px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   z-index: 1;
 }
@@ -247,6 +245,23 @@ defineExpose({
   object-fit: cover;
   user-select: none;
   pointer-events: none;
+}
+
+.page-left::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to left,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.05) 5%,
+    transparent 15%
+  );
+  pointer-events: none;
+  z-index: 2;
 }
 
 
@@ -285,16 +300,16 @@ defineExpose({
   background: linear-gradient(
     to right,
     rgba(0, 0, 0, 0.15) 0%,
-    transparent 10%
+    rgba(0, 0, 0, 0.05) 5%,
+    transparent 15%
   );
-  opacity: 0;
-  transition: opacity 0.8s;
+  opacity: 1;
   pointer-events: none;
   z-index: 5;
 }
 
 .page-right:hover:not(.flipped) {
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  /* Removed shadow for cleaner appearance */
 }
 
 .page-right.flipped {
@@ -309,17 +324,12 @@ defineExpose({
   visibility: hidden;
 }
 
-.page-right.flipped::after {
-  opacity: 1;
-}
-
 .page-content {
   position: absolute;
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
   background: white;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
 
