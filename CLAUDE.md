@@ -4,7 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Rule
 
-ユーザーからの応答は日本語で対応する
+- ユーザーからの応答は日本語で対応する
+- サーバーはユーザーが起動しているので実行しない
 
 ## Project Overview
 
