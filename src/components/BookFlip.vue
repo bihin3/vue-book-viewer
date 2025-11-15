@@ -170,16 +170,11 @@ const leftPageImage = computed(() => {
 // then update it slightly before animation completes to avoid white flash
 watch(currentPage, (newPage, oldPage) => {
   if (newPage > oldPage) {
-    if (!config.value.singleFirstPage) {
-      // Spread mode: update immediately
-      // The back face shows the next spread's left page, so no white flash
+    // Flipping forward - update left page just before animation completes
+    // This ensures smooth transition without white flash
+    setTimeout(() => {
       displayedLeftPage.value = newPage;
-    } else {
-      // Single page mode: delayed update to avoid white flash
-      setTimeout(() => {
-        displayedLeftPage.value = newPage;
-      }, config.value.duration * 0.9);
-    }
+    }, config.value.duration * 0.9);
   } else if (newPage < oldPage) {
     // Flipping backward - update left page immediately
     displayedLeftPage.value = newPage;
