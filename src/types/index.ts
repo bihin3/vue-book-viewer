@@ -3,6 +3,8 @@ export interface BookPage {
   back: string;
 }
 
+export type AnimationType = 'flip' | 'slide' | 'none';
+
 export interface BookFlipOptions {
   width?: number;
   height?: number;
@@ -15,6 +17,7 @@ export interface BookFlipOptions {
   autoPlayInterval?: number;
   rtl?: boolean; // Right-to-left mode for Japanese manga and books
   singleFirstPage?: boolean; // If true, first page shows only on the right side. If false, shows as spread (default: true)
+  animationType?: AnimationType; // Animation type: 'flip' (default), 'slide', 'none'
 }
 
 export interface BookFlipEmits {

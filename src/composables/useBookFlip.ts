@@ -24,6 +24,7 @@ export function useBookFlip(
     autoPlayInterval: 3000,
     rtl: false,
     singleFirstPage: true,
+    animationType: 'flip',
   };
 
   const config = computed(() => ({ ...defaultOptions, ...options }));

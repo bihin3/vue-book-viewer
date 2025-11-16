@@ -1,6 +1,8 @@
 <template>
   <div class="book-flip-container" ref="containerRef" :class="{ maximized: isMaximized }">
+    <!-- Flip animation mode -->
     <div
+      v-if="animationType === 'flip'"
       class="book-flip"
       :class="{ rtl: isRTL }"
       ref="bookRef"
@@ -51,6 +53,35 @@
           <slot name="page" :page="getRightPageBack(index)" :index="index * 2 + 2">
             <img :src="getRightPageBack(index)" alt="" draggable="false">
           </slot>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide/None animation mode -->
+    <div
+      v-else
+      class="book-simple"
+      :class="{ rtl: isRTL, 'animation-none': animationType === 'none' }"
+      ref="bookRef"
+      :style="bookStyle"
+    >
+      <div class="simple-pages-container">
+        <!-- Left page -->
+        <div
+          class="simple-page simple-page-left"
+          :class="{ clickable: canGoPrev }"
+          @click="handleLeftPageClick"
+        >
+          <img v-if="leftPageImage" :src="leftPageImage" alt="" draggable="false">
+        </div>
+
+        <!-- Right page -->
+        <div
+          class="simple-page simple-page-right"
+          :class="{ clickable: canGoNext }"
+          @click="canGoNext && nextPage()"
+        >
+          <img v-if="rightPageImage" :src="rightPageImage" alt="" draggable="false">
         </div>
       </div>
     </div>
@@ -124,6 +155,7 @@
             </svg>
             <span class="btn-text">{{ isFullscreen ? '解除' : '全画面' }}</span>
           </button>
+          <AnimationMenu v-model="animationType" />
         </div>
       </slot>
     </div>
@@ -134,7 +166,8 @@
 import { ref, computed, watch, watchEffect, onMounted, onUnmounted } from 'vue';
 import { useBookFlip } from '../composables/useBookFlip';
 import { useImagePreload } from '../composables/useImagePreload';
-import type { BookPage, BookFlipOptions, BookFlipEmits } from '../types';
+import AnimationMenu from './AnimationMenu.vue';
+import type { BookPage, BookFlipOptions, BookFlipEmits, AnimationType } from '../types';
 
 interface Props {
   pages: BookPage[];
@@ -156,6 +189,7 @@ const bookRef = ref<HTMLElement>();
 const displayedLeftPage = ref(0); // Delayed left page update
 const isFullscreen = ref(false); // Fullscreen state
 const isMaximized = ref(false); // Maximized state (within browser viewport)
+const animationType = ref<AnimationType>(props.options?.animationType || 'flip');
 
 const {
   currentPage,
@@ -243,12 +277,27 @@ const leftPageImage = computed(() => {
   return props.pages[flippedPageIndex]?.back || null;
 });
 
+const rightPageImage = computed(() => {
+  if (!config.value.singleFirstPage) {
+    // Spread mode: right page shows the back of current page
+    return props.pages[currentPage.value]?.back || null;
+  }
+  // Single page mode: right page shows the front of current page
+  return props.pages[currentPage.value]?.front || null;
+});
+
 // Watch currentPage and update displayedLeftPage with delay
 // Keep the old left page visible during flip animation,
 // then update it slightly before animation completes to avoid white flash
 watch(currentPage, (newPage, oldPage) => {
   // Handle initial load
   if (oldPage === undefined) {
+    displayedLeftPage.value = newPage;
+    return;
+  }
+
+  // For non-flip animations, update immediately
+  if (animationType.value !== 'flip') {
     displayedLeftPage.value = newPage;
     return;
   }
@@ -267,6 +316,11 @@ watch(currentPage, (newPage, oldPage) => {
     displayedLeftPage.value = newPage;
   }
 }, { immediate: true });
+
+// Watch animationType changes and update displayedLeftPage immediately
+watch(animationType, () => {
+  displayedLeftPage.value = currentPage.value;
+});
 
 // Preload images for current, next, and previous pages
 watchEffect(() => {
@@ -837,5 +891,87 @@ defineExpose({
 .btn-text {
   white-space: nowrap;
   font-size: 0.85rem;
+}
+
+/* Simple animation mode (slide/none) */
+.book-simple {
+  position: relative;
+  transform-style: preserve-3d;
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 600px;
+  overflow: hidden;
+}
+
+.book-flip-container.maximized .book-simple {
+  height: calc(100vh - 60px);
+  width: auto;
+  max-width: 100%;
+}
+
+.book-flip-container:fullscreen .book-simple {
+  height: calc(100vh - 60px);
+  width: auto;
+  max-width: 100%;
+}
+
+.simple-pages-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+}
+
+.simple-page {
+  position: relative;
+  width: 50%;
+  height: 100%;
+  background: white;
+  overflow: hidden;
+  transition: opacity 0.3s ease;
+}
+
+.book-simple.animation-none .simple-page {
+  transition: none;
+}
+
+.simple-page.clickable {
+  cursor: pointer;
+}
+
+.simple-page img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+  transition: transform 0.3s ease;
+}
+
+.book-simple.animation-none .simple-page img {
+  transition: none;
+}
+
+.simple-page-left {
+  border-right: 1px solid #ddd;
+}
+
+.simple-page-right {
+  border-left: 1px solid #ddd;
+}
+
+.book-simple.rtl .simple-page-left {
+  border-right: none;
+  border-left: 1px solid #ddd;
+  order: 2;
+}
+
+.book-simple.rtl .simple-page-right {
+  border-left: none;
+  border-right: 1px solid #ddd;
+  order: 1;
 }
 </style>
