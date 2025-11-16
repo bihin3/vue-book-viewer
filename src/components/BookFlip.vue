@@ -1,5 +1,5 @@
 <template>
-  <div class="book-flip-container">
+  <div class="book-flip-container" ref="containerRef" :class="{ maximized: isMaximized }">
     <div
       class="book-flip"
       :class="{ rtl: isRTL }"
@@ -98,6 +98,32 @@
           <div class="page-info">
             <span class="page-indicator">{{ currentMaxPage }}/{{ totalPages }}ページ・{{ progressPercent }}%</span>
           </div>
+          <button
+            @click="toggleMaximize"
+            class="control-btn maximize-btn"
+            :title="isMaximized ? '拡大を解除' : '拡大表示'"
+          >
+            <svg v-if="!isMaximized" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 15L5 15M1 15L1 11M1 15L6 10M15 1L11 1M15 1L15 5M15 1L10 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 10L2 10M6 10L6 14M6 10L1 15M10 6L14 6M10 6L10 2M10 6L15 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span class="btn-text">{{ isMaximized ? '縮小' : '拡大' }}</span>
+          </button>
+          <button
+            @click="toggleFullscreen"
+            class="control-btn fullscreen-btn"
+            :title="isFullscreen ? '全画面を解除' : '全画面表示'"
+          >
+            <svg v-if="!isFullscreen" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 2L2 5M2 2L5 2M14 2L14 5M14 2L11 2M2 14L2 11M2 14L5 14M14 14L14 11M14 14L11 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 5L5 2M5 5L2 5M11 5L11 2M11 5L14 5M5 11L5 14M5 11L2 11M11 11L11 14M11 11L14 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span class="btn-text">{{ isFullscreen ? '解除' : '全画面' }}</span>
+          </button>
         </div>
       </slot>
     </div>
@@ -105,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, watchEffect } from 'vue';
+import { ref, computed, watch, watchEffect, onMounted, onUnmounted } from 'vue';
 import { useBookFlip } from '../composables/useBookFlip';
 import { useImagePreload } from '../composables/useImagePreload';
 import type { BookPage, BookFlipOptions, BookFlipEmits } from '../types';
@@ -125,8 +151,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<BookFlipEmits>();
 
+const containerRef = ref<HTMLElement>();
 const bookRef = ref<HTMLElement>();
 const displayedLeftPage = ref(0); // Delayed left page update
+const isFullscreen = ref(false); // Fullscreen state
+const isMaximized = ref(false); // Maximized state (within browser viewport)
 
 const {
   currentPage,
@@ -384,6 +413,41 @@ const handleDragEnd = () => {
   onDragEnd();
 };
 
+// Maximize functionality (within browser viewport)
+const toggleMaximize = () => {
+  isMaximized.value = !isMaximized.value;
+};
+
+// Fullscreen functionality
+const toggleFullscreen = async () => {
+  try {
+    if (!document.fullscreenElement) {
+      // Enter fullscreen mode - fullscreen the component container
+      if (containerRef.value) {
+        await containerRef.value.requestFullscreen();
+      }
+    } else {
+      // Exit fullscreen mode
+      await document.exitFullscreen();
+    }
+  } catch (err) {
+    console.error('Failed to toggle fullscreen:', err);
+  }
+};
+
+const handleFullscreenChange = () => {
+  isFullscreen.value = !!document.fullscreenElement;
+};
+
+// Add fullscreen event listeners
+onMounted(() => {
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', handleFullscreenChange);
+});
+
 // Get the image for the right page front
 // In spread mode, show the back (right page of the spread)
 const getRightPageFront = (index: number) => {
@@ -428,12 +492,46 @@ defineExpose({
   padding: 0;
 }
 
+.book-flip-container.maximized {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.book-flip-container:fullscreen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 .book-flip {
   position: relative;
   transform-style: preserve-3d;
   max-width: 100%;
   max-height: 100%;
   min-height: 600px;
+}
+
+.book-flip-container.maximized .book-flip {
+  height: calc(100vh - 60px);
+  width: auto;
+  max-width: 100%;
+}
+
+.book-flip-container:fullscreen .book-flip {
+  height: calc(100vh - 60px);
+  width: auto;
+  max-width: 100%;
 }
 
 .page-left {
@@ -703,5 +801,41 @@ defineExpose({
   color: #333;
   font-weight: 600;
   user-select: none;
+}
+
+.maximize-btn,
+.fullscreen-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  color: #555;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  margin-left: 0.4rem;
+}
+
+.maximize-btn:hover:not(:disabled),
+.fullscreen-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.maximize-btn:active:not(:disabled),
+.fullscreen-btn:active:not(:disabled) {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(0.98);
+}
+
+.maximize-btn svg,
+.fullscreen-btn svg {
+  flex-shrink: 0;
+}
+
+.btn-text {
+  white-space: nowrap;
+  font-size: 0.85rem;
 }
 </style>
