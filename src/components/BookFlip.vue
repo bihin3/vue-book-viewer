@@ -185,7 +185,8 @@ const currentMaxPage = computed(() => {
 // Progress percentage based on page numbers
 const progressPercent = computed(() => {
   if (totalPages.value === 0) return 0;
-  return Math.round((currentMaxPage.value / totalPages.value) * 100);
+  if (currentMaxPage.value === 1) return 0; // First page is 0%
+  return Math.round(((currentMaxPage.value - 1) / (totalPages.value - 1)) * 100);
 });
 
 const leftPageImage = computed(() => {
@@ -298,7 +299,7 @@ watchEffect(() => {
 });
 
 const bookStyle = computed(() => ({
-  width: '100%',
+  height: '100%',
   aspectRatio: `${config.value.width} / ${config.value.height}`,
   perspective: `${config.value.perspective}px`,
 }));
@@ -420,17 +421,19 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0;
   user-select: none;
   width: 100%;
+  background: #000000;
+  padding: 0;
 }
 
 .book-flip {
   position: relative;
   transform-style: preserve-3d;
-  background: #e0e0e0;
   max-width: 100%;
   max-height: 100%;
+  min-height: 600px;
 }
 
 .page-left {
@@ -616,8 +619,8 @@ defineExpose({
   align-items: center;
   gap: 1rem;
   background: #f8f8f8;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px;
+  border: none;
+  border-top: 1px solid #d0d0d0;
   padding: 0.5rem 1rem;
   width: 100%;
 }
